@@ -7,7 +7,11 @@ import java.util.List;
 public class OnboardingStepService {
     private final OnboardingStepRepository repository;
     public OnboardingStepService(OnboardingStepRepository repository) { this.repository = repository; }
+
     public List<OnboardingStep> createDefaultSteps(Long employeeId) {
+        List<OnboardingStep> existingSteps = repository.findByEmployeeId(employeeId);
+        if (!existingSteps.isEmpty()) return existingSteps;
+
         String[] names = {"Personal Information", "Document Verification", "IT Setup", "Training", "Final Review"};
         String[] descriptions = {"Complete personal details", "Submit required documents", "Complete laptop and system setup", "Complete onboarding training", "Complete final onboarding review"};
         for (int i = 0; i < names.length; i++) {
@@ -20,6 +24,7 @@ public class OnboardingStepService {
         }
         return repository.findByEmployeeId(employeeId);
     }
+
     public List<OnboardingStep> getSteps(Long employeeId) { return repository.findByEmployeeId(employeeId); }
     public OnboardingStep updateStep(Long id, String status) {
         OnboardingStep step = repository.findById(id).orElse(null);
