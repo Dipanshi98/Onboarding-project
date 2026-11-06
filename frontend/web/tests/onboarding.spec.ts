@@ -8,13 +8,16 @@ test('register employee and complete the onboarding process', async ({ page }) =
     const completeButtons = page.getByRole('button', { name: 'Complete' })
 
     while (await completeButtons.count() > 0) {
-      // Identify the exact task before clicking. The app refreshes its task list
-      // after each API update, so wait for this task's button to disappear before
-      // moving on to the next task.
-      const taskCard = page.locator('.task-card').filter({
-        has: completeButtons.first(),
+      // Capture the task's name so the locator remains tied to the same card
+      // when React refreshes the list after the API update.
+      const firstPendingButton = completeButtons.first()
+      const firstPendingCard = page.locator('.task-card').filter({
+        has: firstPendingButton,
       })
-      const taskName = await taskCard.locator('.task-details strong').innerText()
+      const taskName = await firstPendingCard.locator('.task-details strong').innerText()
+      const taskCard = page.locator('.task-card').filter({
+        has: page.getByText(taskName, { exact: true }),
+      })
       const taskButton = taskCard.getByRole('button', { name: 'Complete' })
 
       await taskButton.click()
