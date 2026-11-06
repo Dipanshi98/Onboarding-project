@@ -7,7 +7,19 @@ import java.util.List;
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     public EmployeeService(EmployeeRepository employeeRepository) { this.employeeRepository = employeeRepository; }
-    public Employee saveEmployee(Employee employee) { return employeeRepository.save(employee); }
+
+    public Employee saveEmployee(Employee employee) {
+        if (employee.getEmail() == null || employee.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required.");
+        }
+        String normalizedEmail = employee.getEmail().trim().toLowerCase();
+        return employeeRepository.findByEmailIgnoreCase(normalizedEmail)
+                .orElseGet(() -> {
+                    employee.setEmail(normalizedEmail);
+                    return employeeRepository.save(employee);
+                });
+    }
+
     public List<Employee> getAllEmployees() { return employeeRepository.findAll(); }
     public Employee getEmployeeById(Long id) { return employeeRepository.findById(id).orElse(null); }
     public Employee updateEmployee(Long id, Employee updatedEmployee) {
