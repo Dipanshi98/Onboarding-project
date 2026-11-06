@@ -147,6 +147,19 @@ function App() {
     }
   }
 
+  const confirmOnboarding = async () => {
+    if (!selectedEmployee) return
+    try {
+      const response = await fetch(`${API}/employees/${selectedEmployee.employeeId}/confirm-onboarding`, { method: 'POST' })
+      if (!response.ok) throw new Error(response.status === 409 ? 'Complete every onboarding task before confirmation.' : 'Unable to confirm onboarding.')
+      const updatedEmployee: Employee = await response.json()
+      setSelectedEmployee(updatedEmployee)
+      setEmployees(current => current.map(employee => employee.employeeId === updatedEmployee.employeeId ? updatedEmployee : employee))
+      setMessage('Employee onboarding officially confirmed!')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to confirm onboarding.')
+    }
+  }
   const updateChecklist = async (id: number) => {
     try {
       const response = await fetch(
@@ -667,6 +680,11 @@ function App() {
                   <div className="success-banner">
                     <strong>✓ Employee Onboarding Completed!</strong>
                     <p>All onboarding steps and joining checklist items are complete.</p>
+                    {selectedEmployee.onboardingStatus === 'COMPLETED' ? (
+                      <p>Onboarding officially confirmed.</p>
+                    ) : (
+                      <button onClick={confirmOnboarding}>Confirm Onboarding</button>
+                    )}
                   </div>
                 )}
               </>
