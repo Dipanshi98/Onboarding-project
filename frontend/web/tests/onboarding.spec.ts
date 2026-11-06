@@ -1,8 +1,29 @@
 import { test, expect } from '@playwright/test'
 
 test('register employee and complete the onboarding process', async ({ page }) => {
-  test.setTimeout(90_000)
+  // Each task update also refreshes employee, onboarding, and checklist data.
+  test.setTimeout(180_000)
   const uniqueEmail = `qa.playwright.${Date.now()}@example.com`
+
+  const completeAllTasks = async () => {
+    const completeButtons = page.getByRole('button', { name: 'Complete' })
+
+    while (true) {
+      const previousCount = await completeButtons.count()
+      if (previousCount === 0) break
+
+      const firstButton = completeButtons.first()
+      await expect(firstButton).toBeVisible()
+
+      // The React component replaces the task card after a successful API update.
+      // Trigger the button's native click synchronously, then wait for that task
+      // to disappear from the pending-task list before continuing.
+      await firstButton.evaluate((button) => (button as HTMLButtonElement).click())
+      await expect
+        .poll(() => completeButtons.count(), { timeout: 15_000 })
+        .toBe(previousCount - 1)
+    }
+  }
 
   await page.goto('/')
 
@@ -24,16 +45,12 @@ test('register employee and complete the onboarding process', async ({ page }) =
 
   // Complete all onboarding steps.
   await expect(page.locator('.task-card').first()).toBeVisible()
-  while (await page.getByRole('button', { name: 'Complete' }).count() > 0) {
-    await page.getByRole('button', { name: 'Complete' }).first().click()
-  }
+  await completeAllTasks()
 
   // Complete all joining checklist items.
   await page.getByRole('button', { name: 'Joining Checklist' }).click()
   await expect(page.locator('.task-card').first()).toBeVisible()
-  while (await page.getByRole('button', { name: 'Complete' }).count() > 0) {
-    await page.getByRole('button', { name: 'Complete' }).first().click()
-  }
+  await completeAllTasks()
 
   await expect(page.getByText('Employee Onboarding Completed!')).toBeVisible()
   await page.getByRole('button', { name: 'Confirm Onboarding' }).click()
