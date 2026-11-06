@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  AppState,
 } from "react-native";
 
 import { api, OnboardingStep, ChecklistItem } from "./Src/service/api";
@@ -24,13 +25,30 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
+  useEffect(() => {
+    if (employeeId === null) return;
+    const subscription = AppState.addEventListener("change", async (state) => {
+      if (state !== "active") return;
+      try {
+        const [latestSteps, latestChecklist] = await Promise.all([
+          api.getSteps(employeeId),
+          api.getChecklist(employeeId),
+        ]);
+        setSteps(latestSteps);
+        setChecklist(latestChecklist);
+      } catch {
+        // Keep the last loaded data if a refresh is temporarily unavailable.
+      }
+    });
+    return () => subscription.remove();
+  }, [employeeId]);
   const login = async () => {
     if (!name.trim() || !email.trim()) {
       Alert.alert("Required", "Please enter your name and email.");
       return;
     }
 
-    const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email.trim())) {
       Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
@@ -38,7 +56,7 @@ export default function App() {
 
     try {
       setLoading(true);
-      const nameParts = name.trim().split(/\\s+/);
+      const nameParts = name.trim().split(/\s+/);
       const employee = await api.createEmployee({
         firstName: nameParts[0],
         lastName: nameParts.slice(1).join(" "),
