@@ -8,19 +8,20 @@ test('register employee and complete the onboarding process', async ({ page }) =
     const completeButtons = page.getByRole('button', { name: 'Complete' })
 
     while (await completeButtons.count() > 0) {
-      // Capture the task's name so the locator remains tied to the same card
-      // when React refreshes the list after the API update.
-      const firstPendingButton = completeButtons.first()
-      const firstPendingCard = page.locator('.task-card').filter({
-        has: firstPendingButton,
-      })
-      const taskName = await firstPendingCard.locator('.task-details strong').innerText()
-      const taskCard = page.locator('.task-card').filter({
-        has: page.getByText(taskName, { exact: true }),
-      })
-      const taskButton = taskCard.getByRole('button', { name: 'Complete' })
+      // Find the first pending card and identify it by its unique task title.
+      const firstPendingTitle = page.locator(
+        '.task-card:has(button.complete-button) .task-details strong',
+      ).first()
+      const taskName = await firstPendingTitle.innerText()
 
+      // hasText keeps this locator scoped to the one card with this task name.
+      const taskCard = page.locator('.task-card').filter({ hasText: taskName })
+      await expect(taskCard).toHaveCount(1)
+
+      const taskButton = taskCard.getByRole('button', { name: 'Complete' })
       await taskButton.click()
+
+      // Wait until the API update is reflected by React in this same task card.
       await expect(taskButton).toHaveCount(0, { timeout: 20_000 })
       await expect(taskCard).toContainText('COMPLETED')
       console.log(`Completed task: ${taskName}`)
