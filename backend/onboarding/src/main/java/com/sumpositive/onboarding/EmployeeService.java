@@ -20,7 +20,7 @@ public class EmployeeService {
 
     public Employee saveEmployee(Employee employee) {
         if (employee.getEmail() == null || employee.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email is required.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required.");
         }
         String normalizedEmail = employee.getEmail().trim().toLowerCase();
         return employeeRepository.findByEmailIgnoreCase(normalizedEmail)
