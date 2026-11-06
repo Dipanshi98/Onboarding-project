@@ -12,7 +12,12 @@ import java.util.List;
 @RequestMapping("/api/checklist")
 public class JoiningChecklistController {
     private final JoiningChecklistRepository repository;
-    public JoiningChecklistController(JoiningChecklistRepository repository) { this.repository = repository; }
+    private final OnboardingProgressService progressService;
+
+    public JoiningChecklistController(JoiningChecklistRepository repository, OnboardingProgressService progressService) {
+        this.repository = repository;
+        this.progressService = progressService;
+    }
 
     @PostMapping("/{employeeId}")
     public List<JoiningChecklist> createChecklist(@PathVariable Long employeeId) {
@@ -31,12 +36,19 @@ public class JoiningChecklistController {
     }
 
     @GetMapping("/{employeeId}")
-    public List<JoiningChecklist> getChecklist(@PathVariable Long employeeId) { return repository.findByEmployeeId(employeeId); }
+    public List<JoiningChecklist> getChecklist(@PathVariable Long employeeId) {
+        return repository.findByEmployeeId(employeeId);
+    }
 
     @PutMapping("/item/{id}")
     public JoiningChecklist updateChecklist(@PathVariable Long id, @RequestParam String status) {
         JoiningChecklist item = repository.findById(id).orElse(null);
-        if (item != null) { item.setStatus(status); return repository.save(item); }
+        if (item != null) {
+            item.setStatus(status);
+            JoiningChecklist updated = repository.save(item);
+            progressService.refreshEmployeeStatus(updated.getEmployeeId());
+            return updated;
+        }
         return null;
     }
 }
