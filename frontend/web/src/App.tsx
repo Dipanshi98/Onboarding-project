@@ -69,25 +69,23 @@ function App() {
   }, [])
 
   const loadDashboard = async (employee: Employee) => {
-    setSelectedEmployee(employee)
     setMessage('')
-
     try {
-      const [stepResponse, checklistResponse] = await Promise.all([
+      const [employeeResponse, stepResponse, checklistResponse] = await Promise.all([
+        fetch(`${API}/employees/${employee.employeeId}`),
         fetch(`${API}/onboarding/${employee.employeeId}/steps`),
         fetch(`${API}/checklist/${employee.employeeId}`),
       ])
-
-      if (!stepResponse.ok || !checklistResponse.ok) {
-        throw new Error('Could not load onboarding data')
+      if (!employeeResponse.ok || !stepResponse.ok || !checklistResponse.ok) {
+        throw new Error('Could not load the latest employee onboarding data')
       }
-
+      const latestEmployee: Employee = await employeeResponse.json()
+      setSelectedEmployee(latestEmployee)
+      setEmployees(current => current.map(item => item.employeeId === latestEmployee.employeeId ? latestEmployee : item))
       setSteps(await stepResponse.json())
       setChecklist(await checklistResponse.json())
     } catch {
-      setSteps([])
-      setChecklist([])
-      setMessage('Could not load employee onboarding information.')
+      setMessage('Could not load employee onboarding information. Please check the backend connection.')
     }
   }
 
@@ -187,8 +185,10 @@ function App() {
   const pendingSteps = steps.length - completedSteps
   const completedChecklist = checklist.filter(i => i.status === 'COMPLETED').length
   const pendingChecklist = checklist.length - completedChecklist
-  const progress = steps.length
-    ? Math.round((completedSteps / steps.length) * 100)
+  const totalTasks = steps.length + checklist.length
+  const completedTasks = completedSteps + completedChecklist
+  const progress = totalTasks
+    ? Math.round((completedTasks / totalTasks) * 100)
     : 0
 
   const onboardingComplete =
@@ -388,7 +388,7 @@ function App() {
                   <div className="progress-track">
                     <div className="progress-fill" style={{ width: `${progress}%` }} />
                   </div>
-                  <p>{completedSteps} of {steps.length} onboarding steps completed</p>
+                  <p>{completedTasks} of {totalTasks} total onboarding tasks completed</p>
                 </div>
               ) : (
                 <div className="empty-state compact">
