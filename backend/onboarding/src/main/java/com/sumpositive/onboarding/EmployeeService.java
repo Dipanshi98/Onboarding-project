@@ -62,7 +62,6 @@ public class EmployeeService {
         existingEmployee.setDepartment(updatedEmployee.getDepartment());
         existingEmployee.setDesignation(updatedEmployee.getDesignation());
         existingEmployee.setJoiningDate(updatedEmployee.getJoiningDate());
-        existingEmployee.setOnboardingStatus(updatedEmployee.getOnboardingStatus());
         return employeeRepository.save(existingEmployee);
     }
     public boolean deleteEmployee(Long id) {
