@@ -245,6 +245,13 @@ export default function App() {
           {progress === 100 && totalCount > 0 && (
             <View style={styles.successCard}>
               <Text style={styles.successText}>All onboarding tasks completed!</Text>
+              {confirmed ? (
+                <Text style={styles.successText}>Onboarding officially confirmed.</Text>
+              ) : (
+                <TouchableOpacity style={styles.primaryButton} onPress={confirmOnboarding} disabled={loading}>
+                  <Text style={styles.buttonText}>{loading ? "Confirming..." : "Confirm Onboarding"}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </ScrollView>
