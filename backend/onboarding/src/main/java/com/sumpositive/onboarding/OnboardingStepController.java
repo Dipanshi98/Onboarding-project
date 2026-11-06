@@ -12,11 +12,27 @@ import java.util.List;
 @RequestMapping("/api/onboarding")
 public class OnboardingStepController {
     private final OnboardingStepService service;
-    public OnboardingStepController(OnboardingStepService service) { this.service = service; }
+    private final OnboardingProgressService progressService;
+
+    public OnboardingStepController(OnboardingStepService service, OnboardingProgressService progressService) {
+        this.service = service;
+        this.progressService = progressService;
+    }
+
     @PostMapping("/{employeeId}/steps")
-    public List<OnboardingStep> createSteps(@PathVariable Long employeeId) { return service.createDefaultSteps(employeeId); }
+    public List<OnboardingStep> createSteps(@PathVariable Long employeeId) {
+        return service.createDefaultSteps(employeeId);
+    }
+
     @GetMapping("/{employeeId}/steps")
-    public List<OnboardingStep> getSteps(@PathVariable Long employeeId) { return service.getSteps(employeeId); }
+    public List<OnboardingStep> getSteps(@PathVariable Long employeeId) {
+        return service.getSteps(employeeId);
+    }
+
     @PutMapping("/steps/{id}")
-    public OnboardingStep updateStep(@PathVariable Long id, @RequestParam String status) { return service.updateStep(id, status); }
+    public OnboardingStep updateStep(@PathVariable Long id, @RequestParam String status) {
+        OnboardingStep updated = service.updateStep(id, status);
+        if (updated != null) progressService.refreshEmployeeStatus(updated.getEmployeeId());
+        return updated;
+    }
 }
