@@ -1,0 +1,10 @@
+apache-maven-3.10.0/
+/mobile/
+**/node_modules/
+**/.expo/
+**/dist/
+**/target/
+.idea/
+*.iml
+.env
+.env.*
