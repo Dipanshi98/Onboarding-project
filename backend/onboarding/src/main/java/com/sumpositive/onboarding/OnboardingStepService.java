@@ -1,7 +1,10 @@
 package com.sumpositive.onboarding;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class OnboardingStepService {
@@ -26,9 +29,20 @@ public class OnboardingStepService {
     }
 
     public List<OnboardingStep> getSteps(Long employeeId) { return repository.findByEmployeeId(employeeId); }
+
     public OnboardingStep updateStep(Long id, String status) {
-        OnboardingStep step = repository.findById(id).orElse(null);
-        if (step != null) { step.setStatus(status); return repository.save(step); }
-        return null;
+        String normalizedStatus = normalizeStatus(status);
+        OnboardingStep step = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Onboarding step not found."));
+        step.setStatus(normalizedStatus);
+        return repository.save(step);
+    }
+
+    static String normalizeStatus(String status) {
+        if (status == null || (!"PENDING".equalsIgnoreCase(status.trim())
+                && !"COMPLETED".equalsIgnoreCase(status.trim()))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status must be PENDING or COMPLETED.");
+        }
+        return status.trim().toUpperCase(Locale.ROOT);
     }
 }
