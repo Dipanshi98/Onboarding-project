@@ -1,27 +1,26 @@
 import { test, expect } from '@playwright/test'
 
 test('register employee and complete the onboarding process', async ({ page }) => {
-  // Each task update also refreshes employee, onboarding, and checklist data.
   test.setTimeout(180_000)
   const uniqueEmail = `qa.playwright.${Date.now()}@example.com`
 
   const completeAllTasks = async () => {
     const completeButtons = page.getByRole('button', { name: 'Complete' })
 
-    while (true) {
-      const previousCount = await completeButtons.count()
-      if (previousCount === 0) break
+    while (await completeButtons.count() > 0) {
+      // Identify the exact task before clicking. The app refreshes its task list
+      // after each API update, so wait for this task's button to disappear before
+      // moving on to the next task.
+      const taskCard = page.locator('.task-card').filter({
+        has: completeButtons.first(),
+      })
+      const taskName = await taskCard.locator('.task-details strong').innerText()
+      const taskButton = taskCard.getByRole('button', { name: 'Complete' })
 
-      const firstButton = completeButtons.first()
-      await expect(firstButton).toBeVisible()
-
-      // The React component replaces the task card after a successful API update.
-      // Trigger the button's native click synchronously, then wait for that task
-      // to disappear from the pending-task list before continuing.
-      await firstButton.evaluate((button) => (button as HTMLButtonElement).click())
-      await expect
-        .poll(() => completeButtons.count(), { timeout: 15_000 })
-        .toBe(previousCount - 1)
+      await taskButton.click()
+      await expect(taskButton).toHaveCount(0, { timeout: 20_000 })
+      await expect(taskCard).toContainText('COMPLETED')
+      console.log(`Completed task: ${taskName}`)
     }
   }
 
