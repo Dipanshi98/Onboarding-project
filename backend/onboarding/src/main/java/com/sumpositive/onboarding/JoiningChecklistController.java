@@ -1,6 +1,8 @@
 package com.sumpositive.onboarding;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @CrossOrigin(origins = {
@@ -44,11 +46,11 @@ public class JoiningChecklistController {
     public JoiningChecklist updateChecklist(@PathVariable Long id, @RequestParam String status) {
         JoiningChecklist item = repository.findById(id).orElse(null);
         if (item != null) {
-            item.setStatus(status);
+            item.setStatus(OnboardingStepService.normalizeStatus(status));
             JoiningChecklist updated = repository.save(item);
             progressService.refreshEmployeeStatus(updated.getEmployeeId());
             return updated;
         }
-        return null;
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Checklist item not found.");
     }
 }
