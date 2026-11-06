@@ -20,11 +20,10 @@ public class OnboardingProgressService {
         if (employee == null) return;
         List<OnboardingStep> employeeSteps = steps.findByEmployeeId(employeeId);
         List<JoiningChecklist> employeeItems = checklist.findByEmployeeId(employeeId);
-        int total = employeeSteps.size() + employeeItems.size();
-        if (total == 0) return;
-        boolean complete = employeeSteps.stream().allMatch(s -> "COMPLETED".equalsIgnoreCase(s.getStatus()))
-                && employeeItems.stream().allMatch(i -> "COMPLETED".equalsIgnoreCase(i.getStatus()));
-        employee.setOnboardingStatus(complete ? "COMPLETED" : "IN_PROGRESS");
+        if (employeeSteps.isEmpty() && employeeItems.isEmpty()) return;
+
+        // Completing every task is not the final confirmation; HR must confirm explicitly.
+        employee.setOnboardingStatus("IN_PROGRESS");
         employees.save(employee);
     }
 }
