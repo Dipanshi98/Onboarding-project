@@ -1,0 +1,51 @@
+### 1. CREATE EMPLOYEE (POST)
+POST http://localhost:8080/api/employees
+Content-Type: application/json
+
+{
+  "firstName": "Rahul",
+  "lastName": "Sharma",
+  "email": "rahul.sharma@example.com",
+  "phone": "9876543210",
+  "department": "IT",
+  "designation": "Software Tester",
+  "joiningDate": "2026-11-10",
+  "onboardingStatus": "PENDING"
+}
+### Get all employees
+GET http://localhost:8080/api/employees
+
+
+### 4. UPDATE EMPLOYEE
+PUT http://localhost:8080/api/employees/2
+Content-Type: application/json
+
+{
+  "firstName": "Rahul",
+  "lastName": "Sharma",
+  "email": "rahul.sharma@example.com",
+  "phone": "9999999999",
+  "department": "Quality Assurance",
+  "designation": "QA Tester",
+  "joiningDate": "2026-11-10",
+  "onboardingStatus": "IN_PROGRESS"
+}
+### DELETE EMPLOYEE
+DELETE http://localhost:8080/api/employees/3
+
+
+### 5. CREATE FIVE ONBOARDING STEPS FOR EMPLOYEE 3
+POST http://localhost:8080/api/onboarding/3/steps
+
+### 6. GET ALL ONBOARDING STEPS
+GET http://localhost:8080/api/onboarding/3/steps
+
+### 7. COMPLETE FIRST ONBOARDING STEP
+PUT http://localhost:8080/api/onboarding/steps/1?status=COMPLETED
+
+
+### CREATE THREE CHECKLIST ITEMS
+POST http://localhost:8080/api/checklist/3
+
+### GET CHECKLIST
+GET http://localhost:8080/api/checklist/3

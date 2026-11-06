@@ -1,0 +1,3 @@
+# Maven wrapper launcher; use the installed Maven executable.
+#!/bin/sh
+exec mvn "$@"
