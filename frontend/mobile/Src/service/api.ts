@@ -1,4 +1,8 @@
-const API_BASE_URL = "http://localhost:8080";
+import { Platform } from "react-native";
+
+// Override this with EXPO_PUBLIC_API_URL when using a physical device.
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === "android" ? "http://10.0.2.2:8080" : "http://localhost:8080");
 export interface Employee { employeeId: number; firstName: string; lastName: string; email: string; phone?: string; department?: string; designation?: string; joiningDate?: string; onboardingStatus?: string; }
 export interface OnboardingStep { id: number; employeeId: number; stepName: string; description: string; status: string; }
 export interface ChecklistItem { id: number; employeeId: number; itemName: string; status: string; }
