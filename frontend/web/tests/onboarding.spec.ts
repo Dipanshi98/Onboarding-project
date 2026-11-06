@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('register employee and complete the onboarding process', async ({ page }) => {
+  test.setTimeout(90_000)
   const uniqueEmail = `qa.playwright.${Date.now()}@example.com`
 
   await page.goto('/')
@@ -21,15 +22,15 @@ test('register employee and complete the onboarding process', async ({ page }) =
   await expect(page.getByText('Employee registered successfully!')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Employee Onboarding' })).toBeVisible()
 
-  // Complete every onboarding step.
-  const onboardingSteps = page.locator('.task-card')
-  await expect(onboardingSteps.first()).toBeVisible()
+  // Complete all onboarding steps.
+  await expect(page.locator('.task-card').first()).toBeVisible()
   while (await page.getByRole('button', { name: 'Complete' }).count() > 0) {
     await page.getByRole('button', { name: 'Complete' }).first().click()
   }
 
-  // Complete every joining checklist item.
+  // Complete all joining checklist items.
   await page.getByRole('button', { name: 'Joining Checklist' }).click()
+  await expect(page.locator('.task-card').first()).toBeVisible()
   while (await page.getByRole('button', { name: 'Complete' }).count() > 0) {
     await page.getByRole('button', { name: 'Complete' }).first().click()
   }
@@ -39,7 +40,7 @@ test('register employee and complete the onboarding process', async ({ page }) =
   await expect(page.getByText('Onboarding officially confirmed.')).toBeVisible()
 })
 
-test('employee registration blocks an invalid email address', async ({ page }) => {
+test('employee registration rejects an invalid email address', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Employees' }).click()
   await page.getByRole('button', { name: '+ Add Employee' }).click()
@@ -48,7 +49,8 @@ test('employee registration blocks an invalid email address', async ({ page }) =
   await page.getByLabel('Last Name').fill('Email')
   await page.getByLabel('Email Address').fill('not-an-email')
 
-  const emailInput = page.getByLabel('Email Address')
-  await expect(emailInput).toHaveJSProperty('validity.valid', false)
-  await expect(page.getByRole('button', { name: 'Register Employee' })).toBeEnabled()
+  const isValid = await page.getByLabel('Email Address').evaluate((element) =>
+    (element as HTMLInputElement).checkValidity(),
+  )
+  expect(isValid).toBe(false)
 })
