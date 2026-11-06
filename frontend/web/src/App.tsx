@@ -65,7 +65,25 @@ function App() {
   }
 
   useEffect(() => {
-    loadEmployees()
+    let isActive = true
+
+    fetch(`${API}/employees`)
+      .then(response => {
+        if (!response.ok) throw new Error('Unable to load employees')
+        return response.json()
+      })
+      .then((data: Employee[]) => {
+        if (isActive) setEmployees(data)
+      })
+      .catch(() => {
+        if (isActive) {
+          setMessage('Backend connection failed. Please start Spring Boot.')
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
   }, [])
 
   const loadDashboard = async (employee: Employee) => {
