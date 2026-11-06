@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   View,
@@ -11,47 +10,18 @@ import {
   ActivityIndicator,
 } from "react-native";
 
-import { api } from "./Src/service/api";
+import { api, OnboardingStep, ChecklistItem } from "./Src/service/api";
 import { styles } from "./Src/Styles/AppStyles";
-
-const onboardingSteps = [
-  "Personal Information",
-  "Document Verification",
-  "IT Setup",
-  "Training",
-  "Final Review",
-];
-
-const checklistItems = [
-  "Submit identity documents",
-  "Collect laptop and access credentials",
-  "Complete joining formalities",
-];
 
 export default function App() {
   const [screen, setScreen] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [employeeName, setEmployeeName] = useState("");
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [completedItems, setCompletedItems] = useState<number[]>([]);
+  const [employeeId, setEmployeeId] = useState<number | null>(null);
+  const [steps, setSteps] = useState<OnboardingStep[]>([]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const toggleStep = (index: number) => {
-    setCompletedSteps((old) =>
-      old.includes(index)
-        ? old.filter((item) => item !== index)
-        : [...old, index]
-    );
-  };
-
-  const toggleChecklist = (index: number) => {
-    setCompletedItems((old) =>
-      old.includes(index)
-        ? old.filter((item) => item !== index)
-        : [...old, index]
-    );
-  };
 
   const login = async () => {
     if (!name.trim() || !email.trim()) {
@@ -59,8 +29,7 @@ export default function App() {
       return;
     }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+    const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
     if (!emailPattern.test(email.trim())) {
       Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
@@ -68,9 +37,7 @@ export default function App() {
 
     try {
       setLoading(true);
-
-      const nameParts = name.trim().split(/\s+/);
-
+      const nameParts = name.trim().split(/\\s+/);
       const employee = await api.createEmployee({
         firstName: nameParts[0],
         lastName: nameParts.slice(1).join(" "),
@@ -78,41 +45,76 @@ export default function App() {
         onboardingStatus: "PENDING",
       });
 
-      setEmployeeName(
-        `${employee.firstName} ${employee.lastName}`.trim()
-      );
+      setEmployeeId(employee.employeeId);
+      setEmployeeName(`${employee.firstName} ${employee.lastName}`.trim());
 
+      // Load saved onboarding data; create defaults only for a new employee.
+      let employeeSteps = await api.getSteps(employee.employeeId);
+      if (employeeSteps.length === 0) {
+        employeeSteps = await api.createSteps(employee.employeeId);
+      }
+
+      let employeeChecklist = await api.getChecklist(employee.employeeId);
+      if (employeeChecklist.length === 0) {
+        employeeChecklist = await api.createChecklist(employee.employeeId);
+      }
+
+      setSteps(employeeSteps);
+      setChecklist(employeeChecklist);
       setScreen("dashboard");
-
-      Alert.alert("Success", "Employee registered successfully!");
     } catch (error) {
       Alert.alert(
         "Registration Failed",
-        error instanceof Error
-          ? error.message
-          : "Something went wrong."
+        error instanceof Error ? error.message : "Something went wrong."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const progress = Math.round(
-    ((completedSteps.length + completedItems.length) / 8) * 100
-  );
+  const toggleStep = async (step: OnboardingStep) => {
+    try {
+      const nextStatus = step.status === "COMPLETED" ? "PENDING" : "COMPLETED";
+      const updated = await api.updateStep(step.id, nextStatus);
+      setSteps((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (error) {
+      Alert.alert("Update Failed", error instanceof Error ? error.message : "Could not update this step.");
+    }
+  };
+
+  const toggleChecklist = async (item: ChecklistItem) => {
+    try {
+      const nextStatus = item.status === "COMPLETED" ? "PENDING" : "COMPLETED";
+      const updated = await api.updateChecklist(item.id, nextStatus);
+      setChecklist((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
+    } catch (error) {
+      Alert.alert("Update Failed", error instanceof Error ? error.message : "Could not update this item.");
+    }
+  };
+
+  const completedCount =
+    steps.filter((step) => step.status === "COMPLETED").length +
+    checklist.filter((item) => item.status === "COMPLETED").length;
+  const totalCount = steps.length + checklist.length;
+  const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  const logout = () => {
+    setScreen("login");
+    setEmployeeId(null);
+    setEmployeeName("");
+    setSteps([]);
+    setChecklist([]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.brand}>SUMPOSITIVE</Text>
-          <Text style={styles.headerSubtitle}>
-            Employee Onboarding
-          </Text>
+          <Text style={styles.headerSubtitle}>Employee Onboarding</Text>
         </View>
-
         {screen !== "login" && (
-          <TouchableOpacity onPress={() => setScreen("login")}>
+          <TouchableOpacity onPress={logout}>
             <Text style={styles.logout}>Logout</Text>
           </TouchableOpacity>
         )}
@@ -121,13 +123,9 @@ export default function App() {
       {screen === "login" ? (
         <View style={styles.loginContainer}>
           <Text style={styles.title}>Welcome!</Text>
-
-          <Text style={styles.subtitle}>
-            Start your employee onboarding journey.
-          </Text>
+          <Text style={styles.subtitle}>Start your employee onboarding journey.</Text>
 
           <Text style={styles.label}>Full Name</Text>
-
           <TextInput
             style={styles.input}
             placeholder="Enter your full name"
@@ -137,7 +135,6 @@ export default function App() {
           />
 
           <Text style={styles.label}>Email Address</Text>
-
           <TextInput
             style={styles.input}
             placeholder="Enter your email"
@@ -160,53 +157,33 @@ export default function App() {
             )}
           </TouchableOpacity>
 
-          <Text style={styles.note}>
-            Employee registration is connected to the backend.
-          </Text>
+          <Text style={styles.note}>Your onboarding tasks are saved to the backend.</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.greeting}>
-            Hello, {employeeName}!
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Welcome to your onboarding dashboard.
-          </Text>
+          <Text style={styles.greeting}>Hello, {employeeName}!</Text>
+          <Text style={styles.subtitle}>Welcome to your onboarding dashboard.</Text>
 
           <View style={styles.progressCard}>
             <Text style={styles.cardTitle}>Overall Progress</Text>
-
-            <Text style={styles.progressNumber}>
-              {progress}%
-            </Text>
-
+            <Text style={styles.progressNumber}>{progress}%</Text>
             <View style={styles.progressBackground}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress}%` },
-                ]}
-              />
+              <View style={[styles.progressFill, { width: `${progress}%` }]} />
             </View>
-
-            <Text style={styles.smallText}>
-              {completedSteps.length + completedItems.length} of 8 tasks completed
-            </Text>
+            <Text style={styles.smallText}>{completedCount} of {totalCount} tasks completed</Text>
           </View>
 
           <Text style={styles.sectionTitle}>Onboarding Steps</Text>
-
-          {onboardingSteps.map((step, index) => {
-            const done = completedSteps.includes(index);
-
+          {steps.map((step) => {
+            const done = step.status === "COMPLETED";
             return (
               <TouchableOpacity
-                key={step}
+                key={step.id}
                 style={styles.taskCard}
-                onPress={() => toggleStep(index)}
+                onPress={() => toggleStep(step)}
+                disabled={loading}
               >
-                <Text style={styles.taskName}>{step}</Text>
+                <Text style={styles.taskName}>{step.stepName}</Text>
                 <Text style={done ? styles.done : styles.pending}>
                   {done ? "✓ Completed" : "Mark Complete"}
                 </Text>
@@ -215,17 +192,15 @@ export default function App() {
           })}
 
           <Text style={styles.sectionTitle}>Joining Checklist</Text>
-
-          {checklistItems.map((item, index) => {
-            const done = completedItems.includes(index);
-
+          {checklist.map((item) => {
+            const done = item.status === "COMPLETED";
             return (
               <TouchableOpacity
-                key={item}
+                key={item.id}
                 style={styles.taskCard}
-                onPress={() => toggleChecklist(index)}
+                onPress={() => toggleChecklist(item)}
               >
-                <Text style={styles.taskName}>{item}</Text>
+                <Text style={styles.taskName}>{item.itemName}</Text>
                 <Text style={done ? styles.done : styles.pending}>
                   {done ? "✓ Completed" : "Mark Complete"}
                 </Text>
@@ -233,11 +208,9 @@ export default function App() {
             );
           })}
 
-          {progress === 100 && (
+          {progress === 100 && totalCount > 0 && (
             <View style={styles.successCard}>
-              <Text style={styles.successText}>
-                All onboarding tasks completed!
-              </Text>
+              <Text style={styles.successText}>All onboarding tasks completed!</Text>
             </View>
           )}
         </ScrollView>
