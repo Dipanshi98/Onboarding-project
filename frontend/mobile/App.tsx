@@ -22,6 +22,7 @@ export default function App() {
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   const login = async () => {
     if (!name.trim() || !email.trim()) {
@@ -98,10 +99,25 @@ export default function App() {
   const totalCount = steps.length + checklist.length;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+  const confirmOnboarding = async () => {
+    if (employeeId === null) return;
+    try {
+      setLoading(true);
+      await api.confirmOnboarding(employeeId);
+      setConfirmed(true);
+      Alert.alert("Onboarding Confirmed", "Employee onboarding has been successfully completed.");
+    } catch (error) {
+      Alert.alert("Confirmation Failed", error instanceof Error ? error.message : "Please complete all tasks first.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     setScreen("login");
     setEmployeeId(null);
     setEmployeeName("");
+    setConfirmed(false);
     setSteps([]);
     setChecklist([]);
   };
