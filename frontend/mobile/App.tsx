@@ -95,7 +95,8 @@ export default function App() {
     try {
       const nextStatus = step.status === "COMPLETED" ? "PENDING" : "COMPLETED";
       const updated = await api.updateStep(step.id, nextStatus);
-      setSteps((current) => current.map((item) => item.id === updated.id ? updated : item));\n      setConfirmed(false);
+      setSteps((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setConfirmed(false);
     } catch (error) {
       Alert.alert("Update Failed", error instanceof Error ? error.message : "Could not update this step.");
     }
@@ -105,7 +106,8 @@ export default function App() {
     try {
       const nextStatus = item.status === "COMPLETED" ? "PENDING" : "COMPLETED";
       const updated = await api.updateChecklist(item.id, nextStatus);
-      setChecklist((current) => current.map((entry) => entry.id === updated.id ? updated : entry));\n      setConfirmed(false);
+      setChecklist((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
+      setConfirmed(false);
     } catch (error) {
       Alert.alert("Update Failed", error instanceof Error ? error.message : "Could not update this item.");
     }
